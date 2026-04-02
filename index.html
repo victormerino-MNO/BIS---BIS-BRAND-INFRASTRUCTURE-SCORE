@@ -876,9 +876,7 @@ function nextQuestion() {
 }
 
 function openTallyForm() {
-  const calc = calculateResults();
-  const tallyUrl = 'https://tally.so/r/Y5YzDz?score=' + calc.result.normalized + '&waste=' + calc.wastePercent + '&cost=' + Math.round(calc.costYear);
-  window.open(tallyUrl, '_blank');
+  // kept for compatibility
 }
 
 function showResult() {
@@ -889,24 +887,24 @@ function showResult() {
 
 function renderGate(app) {
   const calc = calculateResults();
+  const tallyUrl = 'https://tally.so/r/Y5YzDz?score=' + calc.result.normalized + '&waste=' + calc.wastePercent + '&cost=' + Math.round(calc.costYear) + '&transparentBackground=1&hideTitle=1';
+  
   app.innerHTML = `
     <div class="fade-in">
       <div class="logo-container">${LOGO_SVG}</div>
       <div class="question-label">RESULTADO PRONTO</div>
       <h1 style="font-size:1.8rem;">SEU DIAGNÓSTICO <em>ESTÁ PRONTO</em></h1>
-      <p class="subtitle">Preencha seus dados para receber o resultado completo com o custo estimado de ineficiência da sua operação de marca.</p>
+      <p class="subtitle">Preencha para ver o diagnóstico completo com cálculo em reais.</p>
       
-      <div style="background:var(--card-bg); border:1.5px solid var(--border); border-radius:10px; padding:24px; margin-bottom:24px;">
-        <p style="font-size:0.9rem; line-height:1.6; color:var(--text-light); margin-bottom:16px;">Seus dados são utilizados apenas para enviar o resultado. Sem spam.</p>
-        <button class="btn-primary" onclick="openTallyForm()" style="width:100%;">
-          Preencher e ver resultado →
-        </button>
-      </div>
-      
-      <div style="text-align:center;">
-        <button class="btn-secondary" onclick="showResult()" style="font-size:0.8rem; color:var(--text-light);">
-          Já preenchi → ver meu resultado
-        </button>
+      <div style="background:var(--card-bg); border:1.5px solid var(--border); border-radius:12px; padding:0; margin-bottom:24px; overflow:hidden;">
+        <iframe 
+          src="${tallyUrl}" 
+          width="100%" 
+          height="480" 
+          frameborder="0" 
+          style="border:none; display:block;"
+          loading="lazy"
+        ></iframe>
       </div>
       
       <div class="footer">
@@ -925,11 +923,29 @@ function prevQuestion() {
 
 function restart() {
   state = { screen: 'intro', currentQuestion: 0, answers: {}, score: 0 };
+  localStorage.removeItem('bis_answers');
   render();
   window.scrollTo(0, 0);
 }
 
-render();
+// On page load: check if returning from Tally or listen for Tally embed submit
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const saved = localStorage.getItem('bis_answers');
+  if (params.get('show') === 'result' && saved) {
+    state.answers = JSON.parse(saved);
+    state.currentQuestion = QUESTIONS.length - 1;
+    state.screen = 'result';
+  }
+  render();
+  
+  // Listen for Tally form submission inside iframe
+  window.addEventListener('message', function(e) {
+    if (e.data && (e.data.type === 'tally.form.submitted' || e.data === 'tally.form.submitted')) {
+      showResult();
+    }
+  });
+})();
 </script>
 </body>
 </html>
