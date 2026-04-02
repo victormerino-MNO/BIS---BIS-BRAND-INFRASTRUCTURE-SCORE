@@ -903,38 +903,25 @@ function submitGateForm(e) {
     return;
   }
   
-  // Submit to FormSubmit.co via hidden iframe (sends email to you)
   const calc = calculateResults();
-  const hiddenForm = document.createElement('form');
-  hiddenForm.method = 'POST';
-  hiddenForm.action = 'https://formsubmit.co/mno@mnoestudio.com';
-  hiddenForm.target = 'hidden-submit';
-  hiddenForm.style.display = 'none';
   
-  const fields = {
-    nome: nome,
-    email: email,
-    empresa: empresa,
-    cargo: cargo,
-    score: calc.result.normalized,
-    waste: calc.wastePercent + '%',
-    cost: 'R$ ' + Math.round(calc.costYear).toLocaleString('pt-BR') + '/ano',
-    _subject: 'BIS — Novo lead: ' + empresa,
-    _template: 'table',
-    _captcha: 'false'
-  };
-  
-  Object.entries(fields).forEach(([key, val]) => {
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = key;
-    input.value = val;
-    hiddenForm.appendChild(input);
-  });
-  
-  document.body.appendChild(hiddenForm);
-  hiddenForm.submit();
-  document.body.removeChild(hiddenForm);
+  // Send via fetch to FormSubmit.co AJAX endpoint
+  fetch('https://formsubmit.co/ajax/mno@mnoestudio.com', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({
+      nome: nome,
+      email: email,
+      empresa: empresa,
+      cargo: cargo,
+      score: calc.result.normalized,
+      waste: calc.wastePercent + '%',
+      cost: 'R$ ' + Math.round(calc.costYear).toLocaleString('pt-BR') + '/ano',
+      _subject: 'BIS — Novo lead: ' + empresa,
+      _template: 'table',
+      _captcha: 'false'
+    })
+  }).catch(function() {}); // fire and forget
   
   // Show result immediately
   showResult();
@@ -947,8 +934,6 @@ function renderGate(app) {
       <div class="question-label">RESULTADO PRONTO</div>
       <h1 style="font-size:1.8rem;">SEU DIAGNÓSTICO <em>ESTÁ PRONTO</em></h1>
       <p class="subtitle">Preencha para ver o diagnóstico completo com cálculo em reais.</p>
-      
-      <iframe name="hidden-submit" style="display:none;"></iframe>
       
       <div id="gate-form" style="margin-bottom:24px;">
         <div style="margin-bottom:16px;">
